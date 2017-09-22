@@ -33,7 +33,7 @@ class Duties():
 
         return pandas.concat(dfs)
 
-    def get_tour_range(self, dates=None, start_time=None, stop_time=None):
+    def get_duties_range(self, dates=None, start_time=None, stop_time=None):
 
         if dates is None:
             dates = self.raw_data['Date_Start'].dt.date.unique()
@@ -58,7 +58,7 @@ class Duties():
 
         return pandas.concat(dfs)
 
-    def get_tour_by_id(self, tour_id):
+    def get_duty_by_id(self, tour_id):
 
         return self.raw_data[self.raw_data['Tours'] == tour_id]
 
