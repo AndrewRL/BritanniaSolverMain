@@ -7,12 +7,15 @@ tours = duties.Duties('tour_schedule_durations.csv')
 
 # define a weighting function for shifts
 
+print(tours.data)
+
 
 def emp_pref(shift):
 
-    shift_day = tours.data[tours.data['Tours'] == shift[1]]['Date'].values[0]
-    shift_pref = emps.data[emps.data['Name'] == shift[0]][shift_day].values[0]
-    am_pm_pref = emps.data[emps.data['Name'] == shift[0]][shift_day + ' time'].values[0]
+    # TODO: Fix these calls
+    shift_day = tours.get_duty_by_id(shift[1])['Date_Start'].dt.date.values[0]
+    shift_pref = emps.get_emp_by_id(shift[0])[shift_day].values[0]
+    am_pm_pref = emps.get_emp_by_id(shift[0])[shift_day + ' time'].values[0]
     am_pm_multiplier = 1
 
     penalized_shifts_for_am_pref = ['Tour {}.{}'.format(day, tour)
@@ -64,7 +67,7 @@ for date in dates:
     britannia_model += 1 <= pulp.lpSum([x[shift] for shift in [(employee, tour)
                                         for employee in emps.data['Name']
                                         for tour in tours.get_duties(dates=[date],
-                                                                         timestamps=['8:30:00'])['Tours']]]) <= 2
+                                                                     timestamps=['8:30:00'])['Tours']]]) <= 2
 
 # Cannot work shifts in the evening if worked at open
 for date in dates:
@@ -72,13 +75,14 @@ for date in dates:
         for eve_tour_name in tours.get_duties_range(dates=[date], start_time=['16:30:00'], partial=True)['Tours']:
 
             shifts = [(employee, tour)
-                      for tour in [eve_tour_name] + tours.get_duties(dates=[date], timestamps=['8:00:00'])['Tours'].tolist()]
+                      for tour in [eve_tour_name] + tours.get_duties(dates=[date],
+                                                                     timestamps=['8:00:00'])['Tours'].tolist()]
 
             britannia_model += pulp.lpSum([x[shift]
                                            for shift in [(employee, tour)
                                            for tour in [eve_tour_name] +
                                            tours.get_duties(dates=[date],
-                                                                timestamps=['8:00:00'])['Tours'].tolist()]]) <= 1
+                                                            timestamps=['8:00:00'])['Tours'].tolist()]]) <= 1
 
 # All shifts must be filled by exactly 1 employee
 for tour in tours.data['Tours']:
@@ -98,8 +102,8 @@ for date in dates:
             britannia_model += pulp.lpSum([x[shift]
                                           for shift in [(employee, tour)
                                           for tour in tours.get_duties_range(dates=[date],
-                                                                                 start_time=curr_tour_start,
-                                                                                 stop_time=curr_tour_stop)]]) <= 1
+                                                                             start_time=curr_tour_start,
+                                                                             stop_time=curr_tour_stop)]]) <= 1
 
 britannia_model.solve()
 

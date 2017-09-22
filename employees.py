@@ -8,7 +8,5 @@ class Employees:
     def __init__(self, data_file):
         self.data = pandas.read_csv(data_file)
 
-
-
-employee_data = Employees('employee_prefs.csv')
-print(employee_data.data)
+    def get_emp_by_id(self, emp_id):
+        return self.data[self.data['Name'] == emp_id]

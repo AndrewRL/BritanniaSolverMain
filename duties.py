@@ -73,7 +73,6 @@ class Duties():
 
 tour_data = Duties(TEST_DATA_PATH)
 
-print(tour_data.get_duty_by_id('Tour 1.4'))
 
 
 
