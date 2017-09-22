@@ -53,22 +53,22 @@ for employee in employee_data['Name']:
 for day in days:
     for employee in employee_data['Name']:
         britannia_model += pulp.lpSum([x[shift] for shift in [(employee, tour)
-                                      for tour in list(data.get_tours(tour_data, [day], [510])['Tours']) +
-                                      list(data.get_tours(tour_data, [day], [600])['Tours'])]]) == 1
+                                      for tour in list(duties.get_tours(tour_data, [day], [510])['Tours']) +
+                                      list(duties.get_tours(tour_data, [day], [600])['Tours'])]]) == 1
 
 # No more than 2 employees can work the opening shift ///THIS HAS NO EFFECT
 for day in days:
     britannia_model += 1 <= pulp.lpSum([x[shift] for shift in [(employee, tour)
                                         for employee in employee_data['Name']
-                                        for tour in data.get_tours(tour_data, [day], [510])['Tours']]]) <= 2
+                                        for tour in duties.get_tours(tour_data, [day], [510])['Tours']]]) <= 2
 
 # Cannot work shifts in the evening if worked at open
 for day in days:
     for employee in employee_data['Name']:
-        for eve_tour_name in data.get_tours(tour_data, [day], [1050, 1080, 1110], bound='Stop')['Tours']:
+        for eve_tour_name in duties.get_tours(tour_data, [day], [1050, 1080, 1110], bound='Stop')['Tours']:
             britannia_model += pulp.lpSum([x[shift]
                                            for shift in [(employee, tour)
-                                           for tour in [eve_tour_name] + data.get_tours(tour_data, [day], [510])['Tours'].tolist()]]) <= 1
+                                           for tour in [eve_tour_name] + duties.get_tours(tour_data, [day], [510])['Tours'].tolist()]]) <= 1
 
 # All shifts must be filled by exactly 1 employee
 for tour in tour_data['Tours']:
@@ -79,14 +79,14 @@ for tour in tour_data['Tours']:
 for day in days:
     for curr_tour in tour_data['Tours']:
 
-        curr_tour_info = data.get_tour_by_id(tour_data, curr_tour)
+        curr_tour_info = duties.get_tour_by_id(tour_data, curr_tour)
         curr_tour_start = curr_tour_info['Start']
         curr_tour_stop = curr_tour_info['Stop']
 
         britannia_model += pulp.lpSum([x[shift]
                                        for shift in [(employee, tour)
                                        for employee in employee_data
-                                       for tour in data.get_tour_range(tour_data, day, curr_tour_start, curr_tour_stop)]])
+                                       for tour in duties.get_tour_range(tour_data, day, curr_tour_start, curr_tour_stop)]])
 
 britannia_model.solve()
 

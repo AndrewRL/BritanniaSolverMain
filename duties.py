@@ -33,7 +33,7 @@ class Duties():
 
         return pandas.concat(dfs)
 
-    def get_tour_range(self, dates=None, start_time=None, stop_time=None):
+    def get_duties_range(self, dates=None, start_time=None, stop_time=None, partial=False):
 
         if dates is None:
             dates = self.raw_data['Date_Start'].dt.date.unique()
@@ -48,15 +48,23 @@ class Duties():
             stop_time = temp_stop_times.dt.time.max()
 
         dfs = []
+
         for date in dates:
 
             start_datetime = pandas.to_datetime(str(date) + ' ' + str(start_time))
             stop_datetime = pandas.to_datetime(str(date) + ' ' + str(stop_time))
 
-            dfs.append(self.raw_data[(self.raw_data['Date_Start'] >=
-                                      start_datetime) & (temp_stop_times < stop_datetime)])
+            if partial is True:
 
-        return pandas.concat(dfs)
+                dfs.append(self.raw_data[(temp_stop_times >= start_datetime) & (temp_stop_times < stop_datetime)])
+                dfs.append(self.raw_data[(self.raw_data['Date_Start'] >= start_datetime) & (self.raw_data['Date_Start'] < stop_datetime)])
+
+            match_start_time = (self.raw_data['Date_Start'] >= start_datetime)
+            match_stop_time = (temp_stop_times < stop_datetime)
+
+            dfs.append(self.raw_data[match_start_time & match_stop_time])
+
+        return pandas.concat(dfs).drop_duplicates()
 
     def get_tour_by_id(self, tour_id):
 
