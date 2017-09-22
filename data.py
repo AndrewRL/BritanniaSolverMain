@@ -2,15 +2,13 @@ __author__ = 'andrewlaird'
 
 import pandas
 
-class
-
 
 def get_emp_data():
-    return pandas.read_csv('~/Desktop/Britannia/employee_prefs.csv')
+    return pandas.read_csv('employee_prefs.csv')
 
 
 def get_tour_data():
-    return pandas.read_csv('~/Desktop/Britannia/tour_schedule_durations.csv')
+    return pandas.read_csv('tour_schedule_durations.csv')
 
 
 def get_tours_by_day(tour_data, day):

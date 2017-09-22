@@ -1,7 +1,6 @@
 __author__ = 'andrewlaird'
 
 import pandas
-from pandas.tseries.offsets import Minute
 
 TEST_DATA_PATH = 'tour_schedule_durations.csv'
 
@@ -42,7 +41,8 @@ class Duties():
         if start_time is None:
             start_time = self.raw_data['Date_Start'].dt.time.min()
 
-        temp_stop_times = self.raw_data['Date_Start'] + pandas.Series([pandas.Timedelta(minutes=duration) for duration in self.raw_data['Duration']])
+        temp_stop_times = self.raw_data['Date_Start'] + pandas.Series([pandas.Timedelta(minutes=duration)
+                                                                       for duration in self.raw_data['Duration']])
 
         if stop_time is None:
             stop_time = temp_stop_times.dt.time.max()
@@ -53,23 +53,19 @@ class Duties():
             start_datetime = pandas.to_datetime(str(date) + ' ' + str(start_time))
             stop_datetime = pandas.to_datetime(str(date) + ' ' + str(stop_time))
 
-            dfs.append(self.raw_data[(self.raw_data['Date_Start'] >= start_datetime) & (temp_stop_times < stop_datetime)])
+            dfs.append(self.raw_data[(self.raw_data['Date_Start'] >=
+                                      start_datetime) & (temp_stop_times < stop_datetime)])
 
         return pandas.concat(dfs)
 
+    def get_tour_by_id(self, tour_id):
 
-def get_emp_data():
-    return pandas.read_csv('~/Desktop/Britannia/employee_prefs.csv')
+        return self.raw_data[self.raw_data['Tours'] == tour_id]
 
-
-# Get an individual tour based on it's unique tour id
-def get_tour_by_id(tour_data, tour_id):
-
-    return tour_data[tour_data['Tours'] == tour_id]
 
 tour_data = Duties(TEST_DATA_PATH)
 
-print(tour_data.get_tour_range(stop_time='16:15:00'))
+print(tour_data.get_tour_by_id('Tour 1.4'))
 
 
 
