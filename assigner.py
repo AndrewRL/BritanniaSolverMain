@@ -2,7 +2,7 @@ __author__ = 'andrewlaird'
 
 import pulp, duties, employees
 
-employee_data = employees.Employees('employee-prefs.csv')
+employee_data = employees.Employees('employee_prefs.csv')
 tour_data = duties.Duties('tour_schedule_durations.csv')
 
 # define a weighting function for shifts
@@ -10,9 +10,9 @@ tour_data = duties.Duties('tour_schedule_durations.csv')
 
 def emp_pref(shift):
 
-    shift_day = tour_data.raw_data[tour_data.raw_data['Tours'] == shift[1]]['Day'].values[0]
-    shift_pref = employee_data.raw_data[employee_data.raw_data['Name'] == shift[0]][shift_day].values[0]
-    am_pm_pref = employee_data.raw_data[employee_data.raw_data['Name'] == shift[0]][shift_day + ' time'].values[0]
+    shift_day = tour_data.data[tour_data.data['Tours'] == shift[1]]['Date'].values[0]
+    shift_pref = employee_data.data[employee_data.data['Name'] == shift[0]][shift_day].values[0]
+    am_pm_pref = employee_data.data[employee_data.data['Name'] == shift[0]][shift_day + ' time'].values[0]
     am_pm_multiplier = 1
 
     penalized_shifts_for_am_pref = ['Tour {}.{}'.format(day, tour)
@@ -32,59 +32,64 @@ def emp_pref(shift):
 
 # create variables for each employee/shift combo
 possible_shifts = [(employee, shift)
-                   for employee in employee_data.raw_data['Name']
-                   for shift in tour_data.raw_data['Tours']]
+                   for employee in employee_data.data['Name']
+                   for shift in tour_data.data['Tours']]
 
 x = pulp.LpVariable.dicts('shift', possible_shifts, lowBound=0, upBound=1, cat=pulp.LpInteger)
 
-#create objective function
+# create objective function
 britannia_model = pulp.LpProblem('Britannia Scheduling Problem', pulp.LpMaximize)
 
 britannia_model += pulp.lpSum([emp_pref(shift) * x[shift]
                                for shift in possible_shifts])
 
-#define constraints
-days = tour_data.raw_data['Date_Start'].dt.date.unique()
+# define constraints
+dates = tour_data.data['Date_Start'].dt.date.unique()
 
 # No more than 4 tours per day
-for day in days:
-    for employee in employee_data.raw_data['Name']:
+for date in dates:
+    for employee in employee_data.data['Name']:
         britannia_model += pulp.lpSum([x[shift]
                                        for shift in [(employee, tour)
-                                       for tour in tour_data.get_duties(dates=[day])['Tours']]]) <= 4
+                                       for tour in tour_data.get_duties(dates=[date])['Tours']]]) <= 4
 
 # No more than 17 tours per week
-for employee in employee_data.raw_data['Name']:
+for employee in employee_data.data['Name']:
     britannia_model += pulp.lpSum([x[shift]
                                    for shift in [(employee, tour)
-                                   for tour in tour_data.raw_data['Tours']]]) <= 17
+                                   for tour in tour_data.data['Tours']]]) <= 17
 
 # No more than 2 employees can work the opening shift ///THIS HAS NO EFFECT
-for day in days:
+for date in dates:
     britannia_model += 1 <= pulp.lpSum([x[shift] for shift in [(employee, tour)
-                                        for employee in employee_data.raw_data['Name']
-                                        for tour in tour_data.get_duties(dates=[day],
+                                        for employee in employee_data.data['Name']
+                                        for tour in tour_data.get_duties(dates=[date],
                                                                          timestamps=['8:30:00'])['Tours']]]) <= 2
 
 # Cannot work shifts in the evening if worked at open
-for day in days:
-    for employee in employee_data.raw_data['Name']:
-        for eve_tour_name in tour_data.get_duties_range(dates=[day], [1050, 1080, 1110], bound='Stop')['Tours']:
+for date in dates:
+    for employee in employee_data.data['Name']:
+        for eve_tour_name in tour_data.get_duties_range(dates=[date], start_time=['16:30:00'], partial=True)['Tours']:
+
+            shifts = [(employee, tour)
+                      for tour in [eve_tour_name] + tour_data.get_duties(dates=[date], timestamps=['8:00:00'])['Tours'].tolist()]
+
             britannia_model += pulp.lpSum([x[shift]
                                            for shift in [(employee, tour)
-                                           for tour in [eve_tour_name] + tour_data.get_duties(dates=[day],
-                                                                                              timestamps=['8:00:00'])['Tours'].tolist()]]) <= 1
+                                           for tour in [eve_tour_name] +
+                                           tour_data.get_duties(dates=[date],
+                                                                timestamps=['8:00:00'])['Tours'].tolist()]]) <= 1
 
 # All shifts must be filled by exactly 1 employee
-for tour in tour_data.raw_data['Tours']:
+for tour in tour_data.data['Tours']:
     britannia_model += pulp.lpSum([x[shift]
                                    for shift in [(employee, tour)
-                                   for employee in employee_data.raw_data['Name']]]) == 1
+                                   for employee in employee_data.data['Name']]]) == 1
 
 # Cannot work shifts that interfere with other shifts
-for day in days:
-    for employee in employee_data.raw_data['Name']:
-        for curr_tour in tour_data.raw_data['Tours']:
+for date in dates:
+    for employee in employee_data.data['Name']:
+        for curr_tour in tour_data.data['Tours']:
 
             curr_tour_info = tour_data.get_duty_by_id(curr_tour)
             curr_tour_start = curr_tour_info['Start']
@@ -92,7 +97,7 @@ for day in days:
 
             britannia_model += pulp.lpSum([x[shift]
                                           for shift in [(employee, tour)
-                                          for tour in tour_data.get_duties_range(dates=[day],
+                                          for tour in tour_data.get_duties_range(dates=[date],
                                                                                  start_time=curr_tour_start,
                                                                                  stop_time=curr_tour_stop)]]) <= 1
 
