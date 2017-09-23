@@ -5,7 +5,7 @@ import pandas as pd
 TEST_DATA_PATH = 'tour_schedule_durations.csv'
 
 
-class Duties():
+class Duties:
 
     def __init__(self, data_file):
         self.data = pd.read_csv(data_file, parse_dates=[['Date', 'Start']])
@@ -42,7 +42,7 @@ class Duties():
             start_time = self.data['Date_Start'].dt.time.min()
 
         temp_stop_times = self.data['Date_Start'] + pd.Series([pd.Timedelta(minutes=duration)
-                                                                   for duration in self.data['Duration']])
+                                                               for duration in self.data['Duration']])
 
         if stop_time is None:
             stop_time = temp_stop_times.dt.time.max()
@@ -69,11 +69,6 @@ class Duties():
     def get_duty_by_id(self, duty_id):
 
         return self.data[self.data['Tours'] == duty_id]
-
-
-tour_data = Duties(TEST_DATA_PATH)
-
-print(tour_data.get_duties_range(dates=['9/24/17'], start_time='16:30:00', partial=True))
 
 
 
