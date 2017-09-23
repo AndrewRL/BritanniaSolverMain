@@ -1,19 +1,23 @@
 __author__ = 'andrewlaird'
 
-import pulp, duties, employees
+import pulp
+import duties
+import employees
+import pandas as pd
 
 emps = employees.Employees('employee_prefs.csv')
 tours = duties.Duties('tour_schedule_durations.csv')
 
 # define a weighting function for shifts
 
-print(tours.data)
+test_shift = ('Employee 1', 'Tour 1.1a')
+print(tours.get_duty_by_id(test_shift[1])['Date_Start'].dt.date.values[0])
 
 
 def emp_pref(shift):
 
     # TODO: Fix these calls
-    shift_day = tours.get_duty_by_id(shift[1])['Date_Start'].dt.date.values[0]
+    shift_day = tours.get_duty_by_id(shift[1])['Date_Start'].dt.strftime('%-m/%d/%y').values[0]
     shift_pref = emps.get_emp_by_id(shift[0])[shift_day].values[0]
     am_pm_pref = emps.get_emp_by_id(shift[0])[shift_day + ' time'].values[0]
     am_pm_multiplier = 1
@@ -72,7 +76,7 @@ for date in dates:
 # Cannot work shifts in the evening if worked at open
 for date in dates:
     for employee in emps.data['Name']:
-        for eve_tour_name in tours.get_duties_range(dates=[date], start_time=['16:30:00'], partial=True)['Tours']:
+        for eve_tour_name in tours.get_duties_range(dates=[date], start_time='16:30:00', partial=True)['Tours']:
 
             shifts = [(employee, tour)
                       for tour in [eve_tour_name] + tours.get_duties(dates=[date],
@@ -96,8 +100,8 @@ for date in dates:
         for curr_tour in tours.data['Tours']:
 
             curr_tour_info = tours.get_duty_by_id(curr_tour)
-            curr_tour_start = curr_tour_info['Start']
-            curr_tour_stop = curr_tour_info['Stop']
+            curr_tour_start = curr_tour_info['Date_Start'].dt.time.values[0]
+            curr_tour_stop = curr_tour_start
 
             britannia_model += pulp.lpSum([x[shift]
                                           for shift in [(employee, tour)

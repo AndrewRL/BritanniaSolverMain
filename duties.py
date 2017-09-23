@@ -1,6 +1,6 @@
 __author__ = 'andrewlaird'
 
-import pandas
+import pandas as pd
 
 TEST_DATA_PATH = 'tour_schedule_durations.csv'
 
@@ -8,7 +8,7 @@ TEST_DATA_PATH = 'tour_schedule_durations.csv'
 class Duties():
 
     def __init__(self, data_file):
-        self.data = pandas.read_csv(data_file, parse_dates=[['Date', 'Start']])
+        self.data = pd.read_csv(data_file, parse_dates=[['Date', 'Start']])
 
     def get_duties(self, dates=None, timestamps=None, durations=None):
 
@@ -24,14 +24,14 @@ class Duties():
         dfs = []
         for date in dates:
             for timestamp in timestamps:
-                datetime_to_match = pandas.to_datetime(str(date) + ' ' + str(timestamp))
+                datetime_to_match = pd.to_datetime(str(date) + ' ' + str(timestamp))
                 match_datetime = (self.data['Date_Start'] == datetime_to_match)
                 for duration in durations:
 
                     match_duration = (self.data['Duration'] == duration)
                     dfs.append(self.data[match_datetime & match_duration])
 
-        return pandas.concat(dfs)
+        return pd.concat(dfs)
 
     def get_duties_range(self, dates=None, start_time=None, stop_time=None, partial=False):
 
@@ -41,8 +41,8 @@ class Duties():
         if start_time is None:
             start_time = self.data['Date_Start'].dt.time.min()
 
-        temp_stop_times = self.data['Date_Start'] + pandas.Series([pandas.Timedelta(minutes=duration)
-                                                                       for duration in self.data['Duration']])
+        temp_stop_times = self.data['Date_Start'] + pd.Series([pd.Timedelta(minutes=duration)
+                                                                   for duration in self.data['Duration']])
 
         if stop_time is None:
             stop_time = temp_stop_times.dt.time.max()
@@ -51,8 +51,8 @@ class Duties():
 
         for date in dates:
 
-            start_datetime = pandas.to_datetime(str(date) + ' ' + str(start_time))
-            stop_datetime = pandas.to_datetime(str(date) + ' ' + str(stop_time))
+            start_datetime = pd.to_datetime(str(date) + ' ' + str(start_time))
+            stop_datetime = pd.to_datetime(str(date) + ' ' + str(stop_time))
 
             if partial is True:
 
@@ -64,14 +64,16 @@ class Duties():
 
             dfs.append(self.data[match_start_time & match_stop_time])
 
-        return pandas.concat(dfs).drop_duplicates()
+        return pd.concat(dfs).drop_duplicates()
 
-    def get_duty_by_id(self, tour_id):
+    def get_duty_by_id(self, duty_id):
 
-        return self.data[self.data['Tours'] == tour_id]
+        return self.data[self.data['Tours'] == duty_id]
 
 
 tour_data = Duties(TEST_DATA_PATH)
+
+print(tour_data.get_duties_range(dates=['9/24/17'], start_time='16:30:00', partial=True))
 
 
 
